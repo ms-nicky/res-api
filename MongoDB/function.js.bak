@@ -1,0 +1,58 @@
+const mongoose = require("mongoose");
+
+// Definisi schema langsung di sini
+const userSchema = new mongoose.Schema({
+  apikey: { type: String, required: true, unique: true },
+  limit: { type: Number, default: 0 }
+});
+
+const User = mongoose.model("User", userSchema);
+
+// Reset semua limit jadi 0
+async function resetAllLimit() {
+  try {
+    await User.updateMany({}, { $set: { limit: 0 } });
+    console.log("✅ All limits have been reset.");
+  } catch (err) {
+    console.error("❌ Error resetting limits:", err);
+  }
+}
+
+// Tambah limit ke user berdasarkan apikey
+async function addLimit(apikey, amount) {
+  try {
+    const result = await User.updateOne(
+      { apikey },
+      { $inc: { limit: amount } }
+    );
+
+    if (result.matchedCount > 0) {
+      console.log(`✅ Added ${amount} limit to apikey: ${apikey}`);
+    } else {
+      console.log(`⚠️ Apikey not found: ${apikey}`);
+    }
+  } catch (err) {
+    console.error("❌ Error adding limit:", err);
+  }
+}
+
+// Cek limit user berdasarkan apikey
+async function checkLimit(apikey) {
+  try {
+    const user = await User.findOne({ apikey });
+    if (!user) {
+      console.log(`⚠️ Apikey not found: ${apikey}`);
+      return null;
+    }
+    return user.limit;
+  } catch (err) {
+    console.error("❌ Error checking limit:", err);
+    return null;
+  }
+}
+
+module.exports = {
+  resetAllLimit,
+  addLimit,
+  checkLimit
+};
